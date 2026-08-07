@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Duel Motif Dayak</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#101820;color:#fff;overflow:hidden}
+button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#app{height:100vh;display:flex;flex-direction:column}
+header{height:13vh;min-height:78px;display:flex;align-items:center;justify-content:space-between;padding:10px 22px;background:#17232d;border-bottom:3px solid #344955}
+.title{font-size:clamp(24px,3vw,46px);font-weight:900;letter-spacing:1px}
+.subtitle{font-size:clamp(12px,1.3vw,19px);opacity:.75}
+.round{font-size:clamp(18px,2vw,28px);font-weight:800;text-align:center}
+.timer{font-size:clamp(28px,3vw,44px);font-weight:900;min-width:75px;text-align:center}
+.scores{display:flex;gap:14px;align-items:center}
+.score{padding:8px 14px;border-radius:12px;font-weight:900;font-size:clamp(17px,1.8vw,28px)}
+.red{background:#9f2b2b}.blue{background:#245b9b}
+main{flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:0}
+.team{position:relative;padding:18px;display:flex;flex-direction:column;min-width:0}
+.teamA{background:linear-gradient(135deg,#5c1717,#281314)}
+.teamB{background:linear-gradient(135deg,#123c68,#101d31)}
+.teamName{font-size:clamp(20px,2.2vw,34px);font-weight:900;text-align:center;margin-bottom:8px}
+.question{background:rgba(0,0,0,.28);border:2px solid rgba(255,255,255,.18);border-radius:18px;padding:18px;text-align:center;font-size:clamp(20px,2.3vw,38px);font-weight:800;display:flex;align-items:center;justify-content:center;min-height:23vh;line-height:1.18}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;flex:1}
+.answer{border:3px solid rgba(255,255,255,.22);border-radius:16px;background:#f3f5f7;color:#111;font-size:clamp(18px,2vw,32px);font-weight:900;padding:12px;transition:.12s;box-shadow:0 6px 0 rgba(0,0,0,.25)}
+.answer:active{transform:translateY(5px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.answer.correct{background:#25a65a;color:white;border-color:#a7f3c5}
+.answer.wrong{background:#d83a3a;color:white;border-color:#ffc1c1}
+.answer.disabled{pointer-events:none;opacity:.7}
+.centerline{position:absolute;left:50%;top:13vh;bottom:0;width:4px;background:#f4d35e;transform:translateX(-50%);z-index:4;box-shadow:0 0 18px #f4d35e}
+.overlay{position:fixed;inset:0;background:rgba(4,9,13,.9);z-index:20;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{width:min(900px,94vw);background:#17232d;border:3px solid #f4d35e;border-radius:28px;padding:34px;text-align:center;box-shadow:0 20px 70px rgba(0,0,0,.55)}
+.card h1{font-size:clamp(34px,5vw,70px);margin:0 0 10px}
+.card p{font-size:clamp(16px,2vw,25px);line-height:1.5;opacity:.9}
+.start{background:#f4d35e;color:#171717;border:0;border-radius:18px;padding:18px 38px;font-size:clamp(22px,2.5vw,34px);font-weight:900;margin-top:15px}
+.smallbtn{position:fixed;right:14px;bottom:10px;z-index:30;border:1px solid #fff5;background:#17232dcc;color:#fff;border-radius:10px;padding:7px 10px;font-weight:700}
+.result{font-size:clamp(24px,3vw,42px);font-weight:900;margin:15px}
+.winner{font-size:clamp(38px,6vw,78px);font-weight:1000;color:#f4d35e}
+.matchbox{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px}.feedback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font-size:clamp(40px,6vw,90px);font-weight:1000;z-index:8;opacity:0}
+.feedback.show{animation:pop .8s ease}
+@keyframes pop{0%{opacity:0;transform:scale(.5)}30%{opacity:1;transform:scale(1.1)}100%{opacity:0;transform:scale(1)}}
+.flash{animation:flash .35s}
+@keyframes flash{50%{filter:brightness(1.8)}}
+@media(max-width:700px){header{height:15vh;padding:7px}.team{padding:8px}.question{min-height:25vh;padding:10px}.answers{gap:7px;margin-top:7px}.answer{border-width:2px;padding:7px}.centerline{top:15vh}}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <div>
+    <div class="title">⚔️ DUEL MOTIF DAYAK</div>
+    <div class="subtitle">Siapa cepat, dia unggul!</div>
+  </div>
+  <div class="round" id="round">RONDE 0/10</div>
+  <div class="timer" id="timer">—</div>
+  <div class="scores">
+    <div class="score red">🔴 <span id="scoreA">0</span></div>
+    <div class="score blue">🔵 <span id="scoreB">0</span></div>
+  </div>
+</header>
+
+<main>
+  <section class="team teamA" id="sideA">
+    <div class="teamName">🔴 KELOMPOK A</div>
+    <div class="question" id="questionA">Tekan MULAI untuk memulai duel.</div>
+    <div class="answers" id="answersA"></div>
+    <div class="feedback" id="feedbackA"></div>
+  </section>
+  <section class="team teamB" id="sideB">
+    <div class="teamName">🔵 KELOMPOK B</div>
+    <div class="question" id="questionB">Tekan MULAI untuk memulai duel.</div>
+    <div class="answers" id="answersB"></div>
+    <div class="feedback" id="feedbackB"></div>
+  </section>
+</main>
+<div class="centerline"></div>
+<button class="smallbtn" onclick="resetGame()">↻ Reset</button>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="card" id="introCard">
+    <h1>⚔️ DUEL MOTIF DAYAK</h1>
+    <p><b>2 kelompok • 10 ronde • 15 detik per ronde</b></p>
+    <p>Setiap kelompok menyentuh jawaban di sisi layarnya sendiri. Jika salah satu tim menjawab benar, <b>soal langsung berganti</b>. Jawaban benar = <b>100 poin</b>. Tim tercepat mendapat <b>+50 bonus</b>. Jawaban salah = <b>−50 poin</b>.</p>
+    <button class="start" onclick="startGame()">MULAI DUEL</button>
+  </div>
+</div>
+
+<script>
+const rounds=[
+ {type:"quick",title:"⚡ PILIH CEPAT",q:"Apa yang dimaksud dengan motif?",items:["Pola/gambar yang dibuat berulang sebagai hiasan","Benda untuk berburu","Alat musik tradisional","Nama rumah adat"],a:0},
+ {type:"quick",title:"⚡ PILIH CEPAT",q:"Motif Dayak merupakan pola atau gambar khas yang berasal dari kebudayaan masyarakat Dayak di...",items:["Pulau Jawa","Pulau Sumatra","Pulau Kalimantan","Pulau Sulawesi"],a:2},
+ {type:"match",title:"🧩 COCOKKAN",q:"Pilih pasangan motif dan makna yang benar!",pairs:[["🌿 PAKIS","Kehidupan, pertumbuhan, semangat berkembang"],["🐦 ENGGANG","Kebijaksanaan, kepemimpinan, kehormatan"],["🐉 NAGA","Keberanian, perlindungan, kekuatan"],["🍃 SULUR & DAUN","Kehidupan, kebersamaan, keseimbangan"]]},
+ {type:"order",title:"🔀 URUTKAN",q:"Susun ciri motif Dayak dari bentuk hingga inspirasi alam!",items:["Garis melengkung","Bentuk simetris","Terinspirasi dari alam","Warna yang cerah"],order:[0,1,2,3]},
+ {type:"image",title:"🖼️ COCOKKAN SIMBOL",q:"Simbol 🌿 pada materi paling tepat dikaitkan dengan...",items:[["🌿","Pakis — kehidupan & pertumbuhan"],["🐦","Enggang — kebijaksanaan & kepemimpinan"],["🐉","Naga — kekuatan & perlindungan"],["🍃","Sulur & Daun — hubungan manusia & alam"]],a:0},
+ {type:"quick",title:"⚡ PILIH CEPAT",q:"Manakah yang termasuk inspirasi alam dalam motif Dayak?",items:["Mobil dan gedung","Daun, akar, burung, naga, ikan, sungai","Telepon dan komputer","Jalan raya dan kendaraan"],a:1},
+ {type:"match",title:"🧩 COCOKKAN FUNGSI",q:"Pilih pernyataan yang tepat tentang fungsi motif Dayak!",pairs:[["🪪 IDENTITAS","Menunjukkan jati diri budaya Dayak"],["✨ HIASAN","Membuat benda terlihat lebih indah"],["💭 MAKNA","Mengandung pesan kehidupan"],["🌳 WARISAN","Diturunkan dari nenek moyang kepada anak cucu"]]},
+ {type:"order",title:"🔀 URUTKAN",q:"Susun nilai berikut sesuai urutan yang muncul dalam materi!",items:["Mencintai budaya sendiri","Menghormati warisan nenek moyang","Menjaga kelestarian alam","Bekerja sama dan hidup rukun"],order:[0,1,2,3]},
+ {type:"quick",title:"⚡ PILIH CEPAT",q:"Mengapa motif Dayak banyak menggunakan bentuk tumbuhan dan hewan?",items:["Karena masyarakat Dayak dekat dengan alam","Karena manusia dilarang digambar","Karena benda modern tidak boleh ada","Karena semua motif harus sama"],a:0},
+ {type:"image",title:"🖼️ TEBAK SIMBOL",q:"Simbol 🐦 dalam materi paling tepat menunjukkan...",items:[["🌿","Pakis — semangat berkembang"],["🐦","Burung Enggang — kebijaksanaan & kepemimpinan"],["🐉","Naga — kekuatan & perlindungan"],["🍃","Sulur — hubungan manusia & alam"]],a:1},
+ {type:"quick",title:"⚡ PILIH CEPAT",q:"Motif Pakis mengambil makna dari sifat tanaman yang...",items:["Mudah tumbuh dan terus berkembang","Selalu hidup di kota","Tidak membutuhkan air","Hanya tumbuh di rumah"],a:0},
+ {type:"match",title:"🧩 COCOKKAN PELAJARAN",q:"Pilih pasangan motif dan pelajaran kehidupan yang tepat!",pairs:[["🌿 PAKIS","Terus belajar dan berkembang"],["🐦 ENGGANG","Pemimpin harus bijaksana dan menjadi teladan"],["🐉 NAGA","Berani mengatakan yang benar"],["🍃 SULUR","Wajib menjaga hutan, sungai, dan lingkungan"]]},
+ {type:"order",title:"🔀 URUTKAN",q:"Susun contoh sikap berani yang paling sesuai dengan materi Naga!",items:["Berani mengatakan yang benar","Berani mengakui kesalahan","Berani membela orang yang lemah","Berani menolak ajakan menyontek"],order:[0,1,2,3]},
+ {type:"image",title:"🖼️ TEBAK SIMBOL",q:"Simbol 🐉 pada materi paling tepat melambangkan...",items:[["🌿","Kehidupan & pertumbuhan"],["🐦","Kebijaksanaan & kehormatan"],["🐉","Keberanian, perlindungan & kekuatan"],["🍃","Kebersamaan & keseimbangan"]],a:2},
+ {type:"quick",title:"⚡ PILIH CEPAT",q:"Motif Sulur dan Daun menggambarkan hubungan antara...",items:["Manusia dan teknologi","Manusia dan alam","Manusia dan kendaraan","Manusia dan gedung"],a:1},
+ {type:"match",title:"🧩 COCOKKAN WARNA",q:"Warna yang disebut identik dengan motif Dayak dalam materi adalah...",pairs:[["🔴 MERAH","Salah satu warna yang identik dengan motif Dayak"],["⚫ HITAM","Salah satu warna yang identik dengan motif Dayak"],["⚪ PUTIH","Salah satu warna yang identik dengan motif Dayak"],["🟡 KUNING","Salah satu warna yang identik dengan motif Dayak"]]},
+ {type:"order",title:"🔀 URUTKAN PELESTARIAN",q:"Susun cara melestarikan motif Dayak dari mengenal hingga membagikan!",items:["Mempelajari makna motif Dayak","Memakai produk lokal bermotif Dayak","Membuat karya seni bertema motif Dayak","Memperkenalkan budaya melalui media sosial"],order:[0,1,2,3]},
+ {type:"quick",title:"⚡ PILIH CEPAT",q:"Menurut materi, melestarikan budaya bukan berarti hanya...",items:["Menyimpannya di museum","Mempelajarinya","Menggunakannya dengan bangga","Mengenalnya"],a:0},
+ {type:"image",title:"🖼️ COCOKKAN SIMBOL",q:"Simbol 🍃 paling tepat dipasangkan dengan...",items:[["🌿","Pakis — kehidupan & pertumbuhan"],["🐦","Enggang — kebijaksanaan"],["🐉","Naga — kekuatan"],["🍃","Sulur & Daun — hubungan manusia & alam"]],a:3},
+ {type:"final",title:"🔥 FINAL DUEL",q:"Kesimpulan utama materi Motif Dayak adalah...",items:["Motif Dayak bukan hanya hiasan, tetapi memiliki makna dan nilai kehidupan","Motif Dayak hanya digunakan untuk memperindah benda","Motif Dayak tidak berkaitan dengan alam","Motif Dayak tidak perlu dilestarikan"],a:0}
+];
+
+let idx=-1,scoreA=0,scoreB=0,time=15,timerId=null,roundLocked=false,answered={A:false,B:false},firstCorrect=null;
+const $=id=>document.getElementById(id);
+function startGame(){ $("overlay").style.display="none"; scoreA=scoreB=0; idx=-1; updateScores(); nextRound(); }
+function nextRound(){
+ idx++; if(idx>=rounds.length){endGame();return;}
+ roundLocked=false; answered={A:false,B:false}; firstCorrect=null; time=15;
+ $("round").textContent=`RONDE ${idx+1}/${rounds.length}`; $("timer").textContent=time;
+ const r=rounds[idx]; $("questionA").textContent=r.q; $("questionB").textContent=r.q;
+ buildRound("A",r); buildRound("B",r);
+ clearInterval(timerId); timerId=setInterval(()=>{time--; $("timer").textContent=time;if(time<=0){clearInterval(timerId);lockRound();}},1000);
+}
+function buildRound(team,r){
+ const box=$("answers"+team);box.innerHTML="";
+ if(r.type==="quick"||r.type==="final"){
+   r.items.forEach((text,i)=>addButton(box,`${String.fromCharCode(65+i)}. ${text}`,()=>quick(team,i,r.a)));
+ } else if(r.type==="image"){
+   r.items.forEach((x,i)=>addButton(box,`<span style="font-size:2em">${x[0]}</span><br>${x[1]}`,()=>quick(team,i,r.a)));
+ } else if(r.type==="match"){
+   const left=document.createElement("div");left.className="matchbox";
+   r.pairs.forEach((p,i)=>addButton(box,`${p[0]} → <b>${p[1]}</b>`,()=>match(team,i)));
+   const hint=document.createElement("div");hint.style.cssText="grid-column:1/-1;text-align:center;font-size:14px;opacity:.7;padding:5px";hint.textContent="Sentuh pasangan yang menurutmu tepat.";box.appendChild(hint);
+ } else if(r.type==="order"){
+   const arr=r.items.map((x,i)=>({x,i})).sort(()=>Math.random()-.5);
+   arr.forEach((v)=>{const b=document.createElement("button");b.className="answer";b.draggable=true;b.dataset.i=v.i;b.textContent=v.x;
+     b.ondragstart=e=>e.dataTransfer.setData("text/plain",v.i);b.ondragover=e=>e.preventDefault();b.ondrop=e=>{e.preventDefault();swapOrder(team,e.dataTransfer.getData("text/plain"),v.i);};
+     box.appendChild(b);
+   });
+   const submit=document.createElement("button");submit.className="answer";submit.style.gridColumn="1/-1";submit.textContent="✓ KIRIM URUTAN";submit.onclick=()=>checkOrder(team,r.order);box.appendChild(submit);
+ }
+}
+function addButton(box,text,fn){const b=document.createElement("button");b.className="answer";b.innerHTML=text;b.onclick=fn;box.appendChild(b);}
+function quick(team,i,a){if(roundLocked||answered[team])return;answered[team]=true;disable(team);if(i===a){award(team);showFeedback(team,"✓ BENAR!")}else{penalty(team);showFeedback(team,"✕ SALAH! −50");}afterAnswer();}
+function match(team,i){
+ if(roundLocked||answered[team])return;
+ const r=rounds[idx]; const correct=[0,1,2,3].includes(i); // each displayed pair is intentionally a correct match
+ if(correct){answered[team]=true;disable(team);award(team);showFeedback(team,"✓ COCOK!");afterAnswer();}
+}
+function swapOrder(team,from,to){
+ const box=$("answers"+team),buttons=[...box.querySelectorAll(".answer")].filter(b=>b.textContent!=="✓ KIRIM URUTAN");
+ const a=buttons.find(b=>b.dataset.i==from),b=buttons.find(b=>b.dataset.i==to);if(a&&b){const tmp=a.dataset.i;a.dataset.i=b.dataset.i;b.dataset.i=tmp;const t=a.innerHTML;a.innerHTML=b.innerHTML;b.innerHTML=t;}
+}
+function checkOrder(team,correct){
+ if(roundLocked||answered[team])return;
+ const box=$("answers"+team),buttons=[...box.querySelectorAll(".answer")].filter(b=>b.textContent!=="✓ KIRIM URUTAN");
+ const good=buttons.every((b,i)=>Number(b.dataset.i)===correct[i]);
+ answered[team]=true;disable(team);
+ if(good){award(team);showFeedback(team,"✓ URUTAN BENAR!")}else{penalty(team);showFeedback(team,"✕ URUTAN SALAH! −50");}
+ afterAnswer();
+}
+function penalty(team){
+  if(team==="A") scoreA=Math.max(0,scoreA-50);
+  else scoreB=Math.max(0,scoreB-50);
+  updateScores();
+  playSound(false);
+}
+function award(team){if(team==="A")scoreA+=100;else scoreB+=100;if(firstCorrect===null){firstCorrect=team;if(team==="A")scoreA+=50;else scoreB+=50;}updateScores();playSound(true);}
+function disable(team){[...$("answers"+team).querySelectorAll(".answer")].forEach(b=>{b.classList.add("disabled");b.disabled=true;});}
+function afterAnswer(){
+  if(roundLocked) return;
+  roundLocked=true;
+  clearInterval(timerId);
+  $("timer").textContent="✓";
+  setTimeout(nextRound,700);
+}
+function lockRound(){
+  if(roundLocked)return;
+  roundLocked=true;
+  clearInterval(timerId);
+  $("timer").textContent="✓";
+  setTimeout(nextRound,700);
+}
+function showFeedback(team,text){const f=$("feedback"+team);f.textContent=text;f.classList.remove("show");void f.offsetWidth;f.classList.add("show");}
+function updateScores(){$("scoreA").textContent=scoreA;$("scoreB").textContent=scoreB}
+function endGame(){clearInterval(timerId);let winner=scoreA>scoreB?"🔴 KELOMPOK A MENANG!":scoreB>scoreA?"🔵 KELOMPOK B MENANG!":"🤝 HASIL IMBANG!";$("overlay").style.display="flex";$("introCard").innerHTML=`<h1>🏆 DUEL SELESAI!</h1><div class="winner">${winner}</div><div class="result">🔴 ${scoreA} poin &nbsp; — &nbsp; ${scoreB} poin 🔵</div><p>Hebat! Semua ronde telah selesai.</p><button class="start" onclick="startGame()">MAIN LAGI</button>`}
+function resetGame(){clearInterval(timerId);scoreA=scoreB=0;idx=-1;updateScores();$("round").textContent="RONDE 0/10";$("timer").textContent="—";$("questionA").textContent="Tekan MULAI untuk memulai duel.";$("questionB").textContent="Tekan MULAI untuk memulai duel.";$("answersA").innerHTML="";$("answersB").innerHTML="";$("overlay").style.display="flex";$("introCard").innerHTML=`<h1>⚔️ DUEL MOTIF DAYAK</h1><p><b>2 kelompok • 20 ronde • berbagai tantangan</b></p><p>Pilih cepat, cocokkan pasangan, susun kartu, dan tebak simbol.</p><button class="start" onclick="startGame()">MULAI DUEL</button>`}
+function playSound(correct){try{const C=window.AudioContext||window.webkitAudioContext,c=new C(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=correct?720:180;g.gain.setValueAtTime(.08,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.25);o.start();o.stop(c.currentTime+.25)}catch(e){}}
+</script>
+</body>
+</html>
